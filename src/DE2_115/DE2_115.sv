@@ -138,7 +138,7 @@ module DE2_115 (
 
 // please replace this module with the qsys module you generated
 // and connect all the ports
-DE2_115_qsys my_qsys(
+rsa_qsys my_qsys(
 	.clk_clk(CLOCK_50),
 	.rst_reset_n(KEY[0]),
 	.uart_0_external_connection_rxd(UART_RXD),
