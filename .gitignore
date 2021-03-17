@@ -1,9 +1,12 @@
 .DS_Store
 .vscode
+.qsys_edit/
+
 __pycache__
 db/
 incremental_db/
 output_files/
 simulation/
 
+*.log
 *.bak
