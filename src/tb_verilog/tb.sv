@@ -21,7 +21,6 @@ module tb;
 		.o_a_pow_d(decrypted_data),
 		.o_finished(fin)
 	);
-
 	initial begin
 		$fsdbDumpfile("lab2.fsdb");
 		$fsdbDumpvars;
