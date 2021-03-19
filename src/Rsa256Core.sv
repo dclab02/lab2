@@ -11,11 +11,11 @@ module Montgomery(
 
 localparam S_IDLE = 0;
 localparam S_COMPUTE = 1;
-logic [256:0] res_r, res_w;
+logic [257:0] res_r, res_w;
 logic state_r, state_w;
 logic done_flag_r, done_flag_w;
 logic multiplyer_r, multiplyer_w;
-logic [256:0] w1, w2, w3, w4;
+logic [257:0] w1, w2, w3, w4;
 logic [7:0] count_r, count_w;
 
 assign o_res = res_r[255:0];
@@ -31,15 +31,18 @@ always_comb begin
         S_IDLE : begin
             if (i_start) begin
 				state_w = S_COMPUTE;
-				res_w = 257'b0;
+				res_w = 258'b0;
 				done_flag_w = 1'b0;
 				multiplyer_w = i_a[0];
 				count_w = 7'b0;
 			end
+			else begin 
+				done_flag_w = 1'b0;	
+			end
         end 
         S_COMPUTE: begin
 			multiplyer_w = i_a[count_r];
-			w1 = multiplyer_w ? {1'b0, i_b} : 257'b0;
+			w1 = multiplyer_w ? {1'b0, i_b} : 258'b0;
 			w2 = w1 + res_r;
 			w3 = w2[0] ? (w2 + {1'b0, i_n}) : w2;
 			w4 = w3 >> 1;
@@ -64,7 +67,7 @@ end
 always_ff @(posedge i_clk or posedge i_rst) begin
 	if (i_rst) begin
 		state_r <= S_IDLE;
-		res_r <= 257'b0;
+		res_r <= 258'b0;
 		done_flag_r <= 1'b0;
 		multiplyer_r <= 1'b0;
 		count_r <= 8'b0;
@@ -108,11 +111,12 @@ always_comb begin
 	w1 = res_r << 1;
 	case(state_r)
 		S_IDLE: begin
+			done_w = 1'b0;
 			if (i_start) begin
 				state_w = S_CALC;
 				res_w = {1'b0,i_a};
-				count_w <= 8'b0;
-				done_w <= 1'b0;
+				count_w = 8'b0;
+				done_w = 1'b0;
 			end
 		end
 		S_CALC: begin
@@ -195,6 +199,7 @@ always_comb begin
 	init_a_w = init_a_r;
 	case(state_r)
 		S_IDLE : begin
+			done_flag_w = 1'b0;
 			if (i_start) begin
 				calc_product_w = 1'b1;
 				state_w = S_PREP;
