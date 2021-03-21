@@ -140,7 +140,7 @@ module DE2_115 (
 // and connect all the ports
 rsa_qsys my_qsys(
 	.clk_clk(CLOCK_50),
-	.rst_reset_n(KEY[0]),
+	.reset_reset_n(KEY[0]),
 	.uart_0_external_connection_rxd(UART_RXD),
 	.uart_0_external_connection_txd(UART_TXD)
 );

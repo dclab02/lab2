@@ -26,7 +26,10 @@ always_comb begin
 	done_flag_w = done_flag_r;
 	multiplyer_w = multiplyer_r; 
 	count_w = count_r;
-	
+	w1 = 258'b0;
+	w2 = 258'b0;
+	w3 = 258'b0;
+	w4 = 258'b0;
 	case (state_r)
         S_IDLE : begin
             if (i_start) begin
@@ -103,6 +106,7 @@ localparam S_CALC = 1;
 
 assign o_result = res_r[255:0];
 assign o_finished = done_r;
+
 always_comb begin
 	state_w = state_r;
 	count_w = count_r;
@@ -177,7 +181,7 @@ localparam S_IDLE = 0;
 localparam S_PREP = 1;
 localparam S_CALC = 2;
 localparam S_WAIT = 3;
-localparam S_INV = 4;
+// localparam S_INV = 4;
 
 // operations for RSA256 decryption
 // namely, the Montgomery algorithm
@@ -187,6 +191,7 @@ ModuloProduct MP(.i_clk(i_clk), .i_rst(i_rst), .i_start(calc_product_w),  .i_a(i
 
 assign o_a_pow_d = result_r;
 assign o_finished = done_flag_r;
+
 always_comb begin
 	state_w = state_r;
 	calc_product_w = calc_product_r;
@@ -197,6 +202,8 @@ always_comb begin
 	calc_mont2_w = calc_mont2_r;
 	result_w = result_r;
 	init_a_w = init_a_r;
+	done_flag_w = done_flag_r;
+
 	case(state_r)
 		S_IDLE : begin
 			done_flag_w = 1'b0;
@@ -273,6 +280,8 @@ always_ff @(posedge i_clk or posedge i_rst) begin
 		count_r <= 9'd0;
 		multiply_r <= 1'b0;
 		init_a_r <= 256'b0;
+		done_flag_r <= 1'b0;
+
 	end
 	else begin
 		state_r <= state_w;
