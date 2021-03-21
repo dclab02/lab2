@@ -80,10 +80,10 @@ always_comb begin
     dec_w = dec_r;
     avm_address_w = avm_address_r;
     avm_read_w = avm_read_r;
+	avm_write_w = avm_write_r;
     state_w = state_r;
     rsa_start_w = rsa_start_r;
     bytes_counter_w = bytes_counter_r;
-    rsa_start_w = rsa_start_r;
     rx_type_w = rx_type_r;
 
      case (state_r)
@@ -110,55 +110,50 @@ always_comb begin
         S_GET_KEY: begin
             if (!avm_waitrequest) begin
                     avm_read_w = 0; // what??
-		            avm_write_w = 0;
-                    if (bytes_counter_r == (2 * RSA_DATA_LEN)) begin
-                        rx_type_w = T_DATA;
-                        state_w = S_RX_IDLE;
-                        bytes_counter_w = 0;
-                    end
-                    else if (bytes_counter_r < RSA_DATA_LEN) begin
+                    if (bytes_counter_r < RSA_DATA_LEN) begin
                         n_w = n_r << 8;
                         n_w[7:0] = avm_readdata[7:0];
                         bytes_counter_w = bytes_counter_r + 1;
                         state_w = S_RX_IDLE;
-
                     end
                     else if (bytes_counter_r < 2 * RSA_DATA_LEN) begin // 33 ~ 64-bit
                         d_w = d_r << 8;
                         d_w[7:0] = avm_readdata[7:0];
                         bytes_counter_w = bytes_counter_r + 1;
                         state_w = S_RX_IDLE;
-
                     end
-                    else begin
+                    if (bytes_counter_r == (2 * RSA_DATA_LEN - 1)) begin
+                        rx_type_w = T_DATA;
                         state_w = S_RX_IDLE;
+                        bytes_counter_w = 0;
                     end
-                    state_w = S_RX_IDLE;
+            end
+            else begin
+                state_w = S_GET_KEY;
             end
         end
 
         // Get encrypted data from UART
         S_GET_DATA: begin
             if (!avm_waitrequest && avm_read_r) begin
-                    avm_read_w = 0;
-		            avm_write_w = 0;
-                    // read from rxdata
-                    if (bytes_counter_r < 32) begin
-                        enc_w = enc_r << 8;
-                        enc_w[7:0] = avm_readdata[7:0];
-                        bytes_counter_w = bytes_counter_r + 1;
-                        state_w = S_RX_IDLE;
-                    end
-                    else if (bytes_counter_r == RSA_DATA_LEN) begin
-                        bytes_counter_w = 0;
-                        rsa_start_w = 1'b1; // start calculate
-                        state_w = S_WAIT_CALCULATE;
-                    end
+                avm_read_w = 0;
+                // read from rxdata
+                if (bytes_counter_r < RSA_DATA_LEN) begin
+                    enc_w = enc_r << 8;
+                    enc_w[7:0] = avm_readdata[7:0];
+                    bytes_counter_w = bytes_counter_r + 1;
+                    state_w = S_RX_IDLE;
+                end
+                if (bytes_counter_r == RSA_DATA_LEN - 1) begin
+                    bytes_counter_w = 0;
+                    rsa_start_w = 1'b1; // start calculate
+                    state_w = S_WAIT_CALCULATE;
+                end
             end
         end
 
         S_WAIT_CALCULATE : begin
-            rsa_start_w = 1'b0;
+            rsa_start_w = 1'b0; // end calculation
             if (rsa_finished) begin
                 // rsa_start_w = 1'b0; // end calculation
                 dec_w = rsa_dec;
@@ -168,31 +163,36 @@ always_comb begin
                 state_w = S_WAIT_CALCULATE;
             end
         end
+
         // send decrypted data
         S_TX_IDLE: begin
             StartRead(STATUS_BASE);
             if (!avm_waitrequest) begin
                 if (avm_readdata[TX_OK_BIT]) begin
-                    StartRead(TX_BASE);
+                    StartWrite(TX_BASE);
                     state_w = S_SEND_DATA;
                 end
+            end
+            else begin
+                state_w = S_TX_IDLE;
             end
         end
 
         S_SEND_DATA : begin
             if (!avm_waitrequest) begin
-                    avm_read_w = 0;
-		            avm_write_w = 0;
-                    if (bytes_counter_r == RSA_DATA_LEN - 1) begin // 31-byte
-                        bytes_counter_w = 0;
-                        state_w = S_RX_IDLE;
-                    end
-                    dec_w = dec_r << 8;
+                avm_write_w = 0;
+                if (bytes_counter_r < RSA_DATA_LEN - 2) begin
                     bytes_counter_w = bytes_counter_r + 1;
+                    dec_w = dec_r << 8;
                     state_w = S_TX_IDLE;
+                end
+                else if (bytes_counter_r == RSA_DATA_LEN - 2) begin // 31-byte
+                    bytes_counter_w = 0;
+                    state_w = S_RX_IDLE;
+                end
             end
             else begin
-                state_w = S_TX_IDLE;
+                state_w = S_SEND_DATA;
             end
         end
 
